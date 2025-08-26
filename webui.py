@@ -1,10 +1,10 @@
-from flask import Flask, request
+from flask import Flask, request, render_template
 from difflib import SequenceMatcher
 from ollama_model import *
-from lang import *
+from Lang.lang import *
 
 user = configparser.ConfigParser()
-user.read('user.ini')
+user.read('UserDatabase/user.ini')
 
 app = Flask(__name__)
 
@@ -25,29 +25,10 @@ def home():
         lang = request.form['lang']
         set_lang(lang)
     else:
-        lang = "Language"
+        lang = user_lang
     global check
     check = 0
-    return f"""
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
-    <title>{app_title}</title>
-    <h1 class="ms-2">{app_title}</h1>
-    <form action="/" method="post">
-    <select class="form-select form-select-sm position-absolute end-0 me-2" onchange="this.form.submit()" name="lang" style="top: 7px; width: 15%;">
-    <option value="" disabled selected hidden>{lang}</option>
-    <option value="TR">TR</option>
-    <option value="EN">EN</option>
-    </select>
-    </form>
-    <form action="/login" method="post">
-    <input class="form-control form-control-sm w-75 ms-2" type="text" name="username" placeholder="{user_name_input}"/> <br>
-    <input class="form-control form-control-sm w-75 ms-2" type="password" name="password" placeholder="{password_input}"/> <br>
-    <input class="btn btn-primary ms-2" type="submit" value="{login_var}"/>
-    </form>
-    <a class="btn btn-primary ms-2" href="/user">{new_user_register}</a>
-    """
+    return render_template("index.html", app_title=app_title, lang=lang, user_name_input=user_name_input, password_input=password_input, login_var=login_var, new_user_register=new_user_register)
 
 @app.route('/login', methods=['POST'])
 def login():
@@ -57,61 +38,24 @@ def login():
 
     if username in user and user[username]["password"] == password:
         check = 1
-        return f"""
-        <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-        <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
-        <title>{login_successfully}</title>
-        <meta name="viewport" content="width=device-width, initial-scale=1.0">
-        <h1 class="ms-2">{login_successfully}</h1> <p class="ms-2">{welcome}, {username}</p>
-        <a class="btn btn-primary ms-2" href="/app">{go_to_app}</a>
-        """
+        return render_template("login_successfully.html", login_successfully=login_successfully, welcome=welcome, username=username, go_to_app=go_to_app)
     else:
         username = request.form['username']
-        return f"""
-        <meta name="viewport" content="width=device-width, initial-scale=1.0">
-        <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-        <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
-        <title>{login_failed}</title>
-        <h1 class="ms-2">{login_failed}</h1> <p class="ms-2">{login_failed_description}</p>
-        <form action="/passrecovery" method="post">
-        <input type="hidden" name="username" value="{username}"/>
-        <a class="btn btn-primary ms-2" href="/user">{user_register}</a><a class="btn btn-primary ms-2" href="/">{try_again}</a>
-        <br>
-        <input class="btn btn-primary ms-2 mt-2" type="submit" value="{password_forget}"/>
-        </form>
-        """
+        return render_template("login_failed.html", login_failed=login_failed, login_failed_description=login_failed_description, username=username, user_register=user_register, try_again=try_again, password_forget=password_forget)
 
 @app.route('/passrecovery', methods=['GET', 'POST'])
 def pass_recovery():
     if request.method == 'POST':
         username = request.form['username']
-        return f"""
-        <meta name="viewport" content="width=device-width, initial-scale=1.0">
-        <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-        <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
-        <title>{password_recovery}</title>
-        <h1 class="ms-2">{password_recovery}</h1>
-        <p class="ms-2">{username} {password_recovery_}</p>
-        <form action="/recovery" method="post">
-        <input type="hidden" name="username" value="{username}"/>
-        <input class="form-control form-control-sm w-75 ms-2" type="password" name="password" placeholder="{password_recovery_input} {username} {pass_rec_}"/> <br>
-        <input class="btn btn-primary ms-2" type="submit" value="{password_recovery_submit}"/>
-        </form>
-        """
+        return render_template("passrecovery.html", password_recovery=password_recovery, username=username, password_recovery_=password_recovery_, password_recovery_input=password_recovery_input, pass_rec_=pass_rec_, password_recovery_submit=password_recovery_submit)
+    
 @app.route('/recovery', methods=['GET', 'POST'])
 def recovery():
     if request.method == 'POST':
         username = request.form['username']
         password = request.form['password']
-        return f"""
-        <meta name="viewport" content="width=device-width, initial-scale=1.0">
-        <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-        <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
-        <title>{password_recovery_report}</title>
-        <h1 class="ms-2">{password_recovery_report}</h1>
-        <p class="ms-2">{password_recovery_func(username, password)}</p>
-        <a class="btn btn-primary ms-2" href="/">{try_again}</a>
-        """
+        user_pass_recovery = password_recovery_func(username, password)
+        return render_template("recovery.html", password_recovery_report=password_recovery_report, username=username, user_pass_recovery=user_pass_recovery, try_again=try_again)
 
 @app.route('/user')
 def user_form():
@@ -119,27 +63,9 @@ def user_form():
         username = request.form['username']
 
         if username in user:
-            return f"""
-            <meta name="viewport" content="width=device-width, initial-scale=1.0">
-            <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-            <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
-            <title>{user_register_failed}</title>
-            <h1>{user_register_failed}</h1>
-            <a href="/user">{try_again}</a>
-            """
+            return render_template("user_register_failed.html", user_register_failed=user_register_failed, try_again=try_again)
 
-    return f"""
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
-    <title>{new_user_register}</title>
-    <h1 class="ms-2">{new_user_register}</h1>
-    <form action="/adduser" method="post">
-    <input class="form-control form-control-sm w-75 ms-2" type="text" name="username" placeholder="{user_name_input}"/> <br>
-    <input class="form-control form-control-sm w-75 ms-2" type="password" name="password" placeholder="{password_input}"/> <br>
-    <input class="btn btn-primary ms-2" type="submit" value="{register}"/>
-    </form>
-    """
+    return render_template("user_register.html", new_user_register=new_user_register, user_name_input=user_name_input, password_input=password_input, register=register)
 
 @app.route('/adduser', methods=['POST'])
 def add_user():
@@ -147,74 +73,27 @@ def add_user():
     password = request.form['password']
     ip_address = request.remote_addr
     if user.has_section(f"{username}"):
-        return f"""
-            <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-            <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
-            <meta name="viewport" content="width=device-width, initial-scale=1.0">
-            <h1 class="ms-2">{user_register_failed_title}</h1> <p class="ms-2">{user_register_failed}</p>
-            <a class="btn btn-primary ms-2" href="/user">{try_again}</a>
-        """
+        return render_template("user_name_failed.html", user_register_failed_title=user_register_failed_title, user_register_failed=user_register_failed, try_again=try_again)
     for section in user.sections():
         if user[section]["ip_address"] == ip_address:
-            return f"""
-            <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-            <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
-            <title>{user_register_failed_title}</title>
-            <meta name="viewport" content="width=device-width, initial-scale=1.0">
-            <h1 class="ms-2">{user_register_failed_title}</h1> <p class="ms-2">{user_register_ip}</p>
-            <a class="btn btn-primary ms-2" href="/user">{try_again}</a>
-            """
+            return render_template("user_ip_failed.html", user_register_failed_title=user_register_failed_title, user_register_ip=user_register_ip, try_again=try_again)
     else:
         if password == "":
-            return f"""
-            <meta name="viewport" content="width=device-width, initial-scale=1.0">
-            <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-            <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
-            <title>{user_register_failed_title}</title>
-            <h1 class="ms-2">{user_register_failed_title}</h1> <p class="ms-2">{user_register_failed_description}</p>
-            <a class="btn btn-primary ms-2" href="/user">{try_again}</a>
-            """
+            return render_template("user_password_failed.html", user_register_failed_title=user_register_failed_title, user_register_failed_description=user_register_failed_description, try_again=try_again)
     user_ip = request.remote_addr
     user.add_section(f"{username}")
     user.set(f"{username}", "password", f"{password}")
     user.set(f"{username}", "ip_address", f"{user_ip}")
-    with open("user.ini", "w") as configfile:
+    with open("UserDatabase/user.ini", "w") as configfile:
         user.write(configfile)
-        return f"""
-        <meta name="viewport" content="width=device-width, initial-scale=1.0">
-        <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-        <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
-        <title>{user_register_successfully}</title>
-        <h1 class="ms-2">{user_register_successfully}</h1> <p class="ms-2">{user_register_successfully_description}</p>
-        <a class="btn btn-primary ms-2" href="/">{login_var}</a>
-        """
+        return render_template("user_register_success.html", user_register_successfully=user_register_successfully, user_register_successfully_description=user_register_successfully_description, login_var=login_var)
 
 @app.route('/app', methods=['GET', 'POST'])
 def app_page():
     if check == 1:
-        return f"""
-        <meta name="viewport" content="width=device-width, initial-scale=1.0">
-        <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-        <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
-        <title>{ollama_web_ui_title}</title>
-        <h1 class="ms-2">{ollama_web_ui_title}</h1>
-        <form action="/chat" method="post">
-        <input class="form-control form-control-sm w-75 ms-2" type="text" name="model" placeholder="{user_model}"/>
-        <input class="form-control form-control-sm w-75 ms-2 mt-2" type="text" name="msg" placeholder="{model_question}"/> <br>
-        <input class="btn btn-primary ms-2" type="submit" value="{model_submit}"/>
-        </form>
-        <a class="btn btn-primary ms-2" href="/">{exit}</a>
-        """
+        return render_template("ollama_webui.html", ollama_web_ui_title=ollama_web_ui_title, user_model=user_model, model_question=model_question, model_submit=model_submit, exit=exit)
     else:
-        return f"""
-        <meta name="viewport" content="width=device-width, initial-scale=1.0">
-        <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-        <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
-        <title>{app_requirements}</title>
-        <h1 class="ms-2">{app_requirements}</h1>
-        <p class="ms-2">{app_requirements_description}</p>
-        <a  class="btn btn-primary ms-2" href="/">{login_var}</a>
-        """
+        return render_template("app_requirements.html", app_requirements=app_requirements, app_requirements_description=app_requirements_description, login_var=login_var)
 @app.route('/chat', methods=['GET', 'POST'])
 def chat():
     if request.method == "POST":
@@ -222,20 +101,7 @@ def chat():
         msg = request.form["msg"]
         user_response = f"{user_}: {msg}"
         model_response = load_model(model, msg)
-        return f"""
-        <meta name="viewport" content="width=device-width, initial-scale=1.0">
-        <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-        <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
-        <title>{model}</title>
-            <p class="alert alert-primary w-75 ms-2 mt-2">{user_response}</p>
-            <p class="alert alert-success w-75 ms-2">{model}: {model_response}</p>
-            <form action="/chat" method="post">
-                <input type="hidden" name="model" value="{model}"/>
-                <input class="form-control form-control-sm w-75 ms-2" type="text" name="msg" placeholder="{model_question}"/>
-                <input class="btn btn-primary ms-2 mt-2" type="submit" value="{model_submit}"/>
-            </form>
-            <a  class="btn btn-primary ms-2" href="/">{exit}</a>
-            """
+        return render_template("ollama_webui_chat.html", model=model, user_response=user_response, model_response=model_response, model_question=model_question, model_submit=model_submit, exit=exit)
 
 if __name__ == '__main__':
     app.run(host="0.0.0.0", port=5000, debug=True)
