@@ -9,8 +9,8 @@
 > 📦 Initial release: **LXLM-Ollama-WebUI 1.0**   
 > 📦 Current version: **LXLM-Ollama-WebUI 1.1**   
 > 📦 Next release: **LXLM-Ollama-WebUI 1.2**   
-> ⏳ Next release status: **It's not under development...**   
-> 🛠️ Next release type: **Uncertain** 
+> ⏳ Next release status: **Under development...**   
+> 🛠️ Next release type: **Big Update** 
 
 ---
 
